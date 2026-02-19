@@ -18,12 +18,12 @@
     body { margin: 0; padding: 16px; font-family: sans-serif; background: var(--bg); color: var(--text); padding-bottom: 120px; }
     .wrap { max-width: 600px; margin: 0 auto; } 
 
-    /* ▼ チャートエリア（ボタンを外に出したのでシンプルに） ▼ */
+    /* ▼ チャートエリア ▼ */
     .chart-wrapper {
       position: relative;
       width: 100%;
       aspect-ratio: 1 / 1;
-      margin-bottom: 12px; /* 下のボタンとの隙間 */
+      margin-bottom: 12px; 
       border-radius: 8px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.8);
       background: #000;
@@ -38,7 +38,7 @@
       color: #666; font-size: 14px; letter-spacing: 1px; z-index: 50;
     }
 
-    /* ▼ 新設: チャート下の操作ボタンエリア（別枠） ▼ */
+    /* ▼ コントロールボタン列 ▼ */
     .controls-row {
       display: flex;
       justify-content: space-between;
@@ -61,7 +61,6 @@
     }
     .chart-dl-btn:hover { color: #fff; background: #333; }
     .chart-dl-btn .material-symbols-rounded { font-size: 20px; }
-
 
     /* ▼ タブエリア ▼ */
     .tabs-wrapper {
@@ -94,7 +93,7 @@
     }
     .tab.active { background: #444; color: #fff; border-color: #666; }
 
-    /* ▼ その他デザイン ▼ */
+    /* ▼ ヘッダー・グリッド・フッター ▼ */
     .category-header {
       background: #444; color: #111; padding: 16px 20px; border-radius: 12px 12px 0 0;
       display: flex; justify-content: space-between; align-items: center; margin-top: 10px; transition: background 0.3s;
@@ -193,7 +192,7 @@
 
   <script>
     const whiskyFlavorData = {
-      fruity:  [ { en: "Lemon", jp: "レモン" }, { en: "Orange", jp: "オレンジ" }, { en: "Green apple", jp: "青リンゴ" }, { en: "Red apple", jp: "赤リンゴ" }, { en: "Pear", jp: "洋梨" }, { en: "Peach", jp: "桃" }, { en: "Apricot", jp: "アプリコット" }, { en: "Cherry", jp: "チェリー" }, { en: "Banana", jp: "バナナ" }, { en: "Pineapple", jp: "パイナップル" }, { en: "Mango", jp: "マンゴー" }, { en: "Citrus peel", jp: "柑橘ピール" } ],
+      fruity:  [ { en: "Citrus peel", jp: "柑橘ピール" }, { en: "Lemon", jp: "レモン" }, { en: "Orange", jp: "オレンジ" }, { en: "Green apple", jp: "青リンゴ" }, { en: "Red apple", jp: "赤リンゴ" }, { en: "Pear", jp: "洋梨" }, { en: "Peach", jp: "桃" }, { en: "Apricot", jp: "アプリコット" }, { en: "Cherry", jp: "チェリー" }, { en: "Banana", jp: "バナナ" }, { en: "Pineapple", jp: "パイナップル" }, { en: "Mango", jp: "マンゴー" } ],
       floral:  [ { en: "Lavender", jp: "ラベンダー" }, { en: "Rose", jp: "ローズ" }, { en: "Violet", jp: "スミレ" }, { en: "Orange blossom", jp: "オレンジブロッサム" }, { en: "Jasmine", jp: "ジャスミン" }, { en: "Chamomile", jp: "カモミール" }, { en: "Honeysuckle", jp: "ハニーサックル" }, { en: "Lilac", jp: "ライラック" }, { en: "Geranium", jp: "ゼラニウム" }, { en: "Peony", jp: "ピオニー" }, { en: "Osmanthus", jp: "金木犀" }, { en: "Lily", jp: "ユリ" } ],
       woody:   [ { en: "Oak", jp: "オーク" }, { en: "Cedar", jp: "シダー" }, { en: "Sandalwood", jp: "白檀" }, { en: "Cinnamon", jp: "シナモン" }, { en: "Nutmeg", jp: "ナツメグ" }, { en: "Clove", jp: "クローブ" }, { en: "Tobacco", jp: "タバコ" }, { en: "Leather", jp: "レザー" }, { en: "Toasted oak", jp: "トーストオーク" }, { en: "Charred wood", jp: "チャーウッド" }, { en: "Dry timber", jp: "乾燥材" }, { en: "Resin", jp: "樹脂" } ],
       smoky:   [ { en: "Smoke", jp: "スモーク" }, { en: "Bonfire", jp: "焚き火" }, { en: "Ash", jp: "灰" }, { en: "Seaweed", jp: "海藻" }, { en: "Rocky shore", jp: "岩場" }, { en: "Damp earth", jp: "湿った土" }, { en: "Char", jp: "炭" }, { en: "Tar", jp: "タール" }, { en: "Medicinal", jp: "メディシナル" }, { en: "Disinfectant", jp: "消毒液" }, { en: "Iodine", jp: "ヨード" }, { en: "Peat smoke", jp: "ピートスモーク" } ],
@@ -396,9 +395,31 @@
         toolbox: { show: false },
         tooltip: { formatter: '{b}: Level {c}' },
         series: [{
-          type: 'treemap', data: chartData, roam: false, nodeClick: false, breadcrumb: { show: false },
+          type: 'treemap', 
+          data: chartData, 
+          roam: false, 
+          nodeClick: false, 
+          breadcrumb: { show: false },
           itemStyle: { borderColor: '#000', borderWidth: 2, gapWidth: 1 },
-          label: { show: true, formatter: '{b}', color: '#fff', fontSize: 13, fontWeight: 'bold', textShadowColor: '#000', textShadowBlur: 3 },
+          // ▼▼▼ 修正: upperLabelを追加してカテゴリ名を表示 ▼▼▼
+          upperLabel: {
+            show: true,
+            height: 20,
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: 11,
+            textShadowColor: '#000',
+            textShadowBlur: 2
+          },
+          label: { 
+            show: true, 
+            formatter: '{b}', 
+            color: '#fff', 
+            fontSize: 13, 
+            fontWeight: 'bold', 
+            textShadowColor: '#000', 
+            textShadowBlur: 3 
+          },
           left: 0, top: 0, right: 0, bottom: 0, width: '100%', height: '100%'
         }]
       };
