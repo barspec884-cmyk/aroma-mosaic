@@ -1,129 +1,191 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>Amber Palette - Aroma Mosaic</title>
-	<link rel="manifest" href="manifest.json" />
-  
-  <meta name="theme-color" content="#1f2833" />
-  
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="AmberPalette" />
-  <link rel="apple-touch-icon" href="icon.png" />
-	
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+  
   <style>
-    :root { --bg: #0b0c10; --panel: #1f2833; --text: #e9ecf1; }
-    body { margin: 0; padding: 16px; font-family: sans-serif; background: var(--bg); color: var(--text); }
-    .wrap { max-width: 600px; margin: 0 auto; padding-bottom: 40px; } 
-    
-    .header-controls { display: flex; justify-content: flex-end; margin-bottom: 12px; }
-    .lang-toggle { display: flex; background: #222; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
-    .lang-opt { padding: 6px 16px; font-size: 12px; cursor: pointer; color: #888; font-weight: bold; transition: all 0.2s; letter-spacing: 1px; }
-    .lang-opt.active { background: #555; color: #fff; }
-    
-    #chart-container { width: 100%; aspect-ratio: 1 / 1; background: #111; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); overflow: hidden; }
-    .empty-msg { text-align: center; height: 100%; display: flex; align-items: center; justify-content: center; color: #666; font-size: 14px; letter-spacing: 1px; }
-    
-    .tabs { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #333; }
-    .tab { padding: 8px 16px; border-radius: 20px; background: #2a2a2a; color: #aaa; border: 1px solid transparent; cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap; transition: 0.2s; }
-    .tab.active { background: #444; color: #fff; }
+    :root { 
+      --bg: #0b0c10; 
+      --panel: #1f2833; 
+      --text: #e9ecf1; 
+      --card-bg: #ffffff;
+      --card-text: #333333;
+    }
+    body { margin: 0; padding: 16px; font-family: sans-serif; background: var(--bg); color: var(--text); padding-bottom: 120px; }
+    .wrap { max-width: 600px; margin: 0 auto; } 
 
-    /* ★新規：IMG_5141.jpg風の固定パネルデザイン */
-    .active-panel {
-      background: #f4f4f4; /* 白系の土台 */
-      border-radius: 16px;
+    /* ▼ チャートエリア（ボタンを外に出したのでシンプルに） ▼ */
+    .chart-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      margin-bottom: 12px; /* 下のボタンとの隙間 */
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      background: #000;
       overflow: hidden;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      border: 1px solid #222;
     }
-    .panel-header {
-      padding: 12px 20px;
-      display: flex; justify-content: space-between; align-items: center;
-      color: #111; transition: background 0.3s;
-    }
-    .panel-title-area { display: flex; flex-direction: column; }
-    .panel-title-main { font-weight: 900; font-size: 18px; letter-spacing: 1px; }
-    .panel-title-sub { font-size: 11px; opacity: 0.8; font-weight: bold; margin-top: 2px; }
-    .panel-count { 
-      background: rgba(255,255,255,0.6); padding: 6px 14px; 
-      border-radius: 20px; font-size: 13px; font-weight: bold; 
-    }
-    .panel-body { padding: 16px; }
+    #chart-container { width: 100%; height: 100%; }
 
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    @media (max-width: 480px){ .grid { grid-template-columns: repeat(2, 1fr); } }
+    .empty-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; display: flex; align-items: center; justify-content: center;
+      color: #666; font-size: 14px; letter-spacing: 1px; z-index: 50;
+    }
+
+    /* ▼ 新設: チャート下の操作ボタンエリア（別枠） ▼ */
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 0 2px;
+    }
+
+    .lang-toggle { 
+      display: flex; background: #1a1a1a; border-radius: 6px; 
+      overflow: hidden; border: 1px solid #444; 
+    }
+    .lang-opt { padding: 8px 20px; font-size: 13px; cursor: pointer; color: #888; font-weight: bold; transition: 0.2s; letter-spacing: 1px; }
+    .lang-opt.active { background: #555; color: #fff; }
+
+    .chart-dl-btn {
+      background: #1a1a1a; color: #ccc; border: 1px solid #444; 
+      cursor: pointer; display: flex; align-items: center; justify-content: center; 
+      padding: 8px 12px; border-radius: 6px; transition: 0.2s;
+    }
+    .chart-dl-btn:hover { color: #fff; background: #333; }
+    .chart-dl-btn .material-symbols-rounded { font-size: 20px; }
+
+
+    /* ▼ タブエリア ▼ */
+    .tabs-wrapper {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .tab-nav-btn {
+      flex-shrink: 0; 
+      background: #2a2a2a; border: 1px solid #444; color: #aaa; border-radius: 50%;
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: 0.2s;
+    }
+    .tab-nav-btn:active { background: #555; color: #fff; }
+    .tab-nav-btn .material-symbols-rounded { font-size: 20px; }
+
+    .tabs { 
+      flex: 1; min-width: 0; display: flex; overflow-x: auto; gap: 8px; padding-bottom: 4px; 
+      scrollbar-width: none; scroll-behavior: smooth;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
     
-    /* 白い土台に合わせたボタンデザイン */
-    .btn { 
-      padding: 10px 4px; border-radius: 12px; background: #ffffff; 
-      border: 2px solid transparent; color: #333; cursor: pointer; 
-      display: flex; flex-direction: column; justify-content: center; align-items: center; 
-      min-height: 70px; transition: 0.1s; text-align: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    .tab { 
+      padding: 8px 16px; border-radius: 20px; background: #2a2a2a; color: #888; 
+      cursor: pointer; font-size: 12px; font-weight: bold; white-space: nowrap; 
+      transition: 0.2s; border: 1px solid transparent; flex-shrink: 0;
     }
-    .btn:active { transform: translateY(2px); box-shadow: none; }
-    .btn-main { font-size: 13px; font-weight: 800; margin-bottom: 4px; transition: 0.2s; }
-    .btn-sub { font-size: 10px; color: #888; margin-bottom: 4px; transition: 0.2s; }
-    .btn-dots { font-size: 11px; letter-spacing: 1px; color: #ccc; }
-    .btn.selected { background: #fafafa; } /* 選ばれた時の微細な変化 */
+    .tab.active { background: #444; color: #fff; border-color: #666; }
 
-    /* アクションボタン（Undo追加） */
-    .actions { display: flex; gap: 8px; margin-top: 10px; }
-    .action-btn { 
-      flex: 1; padding: 14px 4px; border-radius: 8px; font-size: 13px; font-weight: bold; 
-      cursor: pointer; border: none; transition: 0.2s; 
-      display: flex; align-items: center; justify-content: center; gap: 6px; 
+    /* ▼ その他デザイン ▼ */
+    .category-header {
+      background: #444; color: #111; padding: 16px 20px; border-radius: 12px 12px 0 0;
+      display: flex; justify-content: space-between; align-items: center; margin-top: 10px; transition: background 0.3s;
     }
+    .cat-title h2 { margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase; }
+    .cat-title span { font-size: 11px; font-weight: bold; opacity: 0.8; display: block; margin-top: 2px; }
+    .cat-count { background: rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+
+    .grid-bg { background: #f0f2f5; border-radius: 0 0 12px 12px; padding: 16px; margin-bottom: 24px; min-height: 200px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    @media (max-width: 550px){ .grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .card-btn {
+      background: var(--card-bg); border-radius: 12px; padding: 14px 4px; text-align: center; cursor: pointer;
+      transition: all 0.15s ease; border: 2px solid transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      min-height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+      user-select: none; -webkit-tap-highlight-color: transparent;
+    }
+    .card-btn:active { transform: scale(0.96); }
+    .card-btn.selected { background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card-main { font-size: 14px; font-weight: 800; color: var(--card-text); margin-bottom: 4px; line-height: 1.2; }
+    .card-sub { font-size: 10px; color: #999; margin-bottom: 6px; font-weight: bold; }
+    .card-dots { font-size: 12px; color: #ddd; letter-spacing: 2px; line-height: 1; }
+
+    .action-bar { display: flex; gap: 12px; margin-top: 20px; }
+    .action-btn { flex: 1; height: 48px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
     .action-btn:active { transform: translateY(2px); }
-    .btn-undo { background: #444; color: #fff; }
-    .btn-reset { background: #222; color: #ccc; border: 1px solid #444; }
-    .btn-copy { background: #f4d03f; color: #111; flex: 1.5; } /* コピーボタンを少し広めに */
+    .btn-dark { background: #333; color: #fff; border: 1px solid #444; }
+    .btn-primary { background: #f4d03f; color: #111; }
+    .material-symbols-rounded { font-size: 18px; }
 
-    .toast { position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%); background: #4caf50; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; transition: 0.3s; z-index: 1000; pointer-events: none; }
+    .toast { position: fixed; bottom: -60px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: bold; transition: 0.3s; z-index: 2000; box-shadow: 0 10px 20px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; }
     .toast.show { bottom: 30px; }
   </style>
 </head>
 <body>
-  <div class="toast" id="toast">Copied to clipboard!</div>
+  <div class="toast" id="toast">
+    <span class="material-symbols-rounded">check_circle</span>
+    <span id="toast-msg">Copied!</span>
+  </div>
+
   <div class="wrap">
-    <div class="header-controls">
+    
+    <div class="chart-wrapper">
+      <div class="empty-overlay" id="emptyText">Tap flavors below to build profile</div>
+      <div id="chart-container"></div>
+    </div>
+
+    <div class="controls-row">
       <div class="lang-toggle">
         <span class="lang-opt active" id="lang-en" onclick="setLang('en')">EN</span>
         <span class="lang-opt" id="lang-jp" onclick="setLang('jp')">JP</span>
       </div>
-    </div>
-    
-    <div id="chart-container"><div class="empty-msg" id="emptyText">Tap flavors below to build profile</div></div>
-    
-    <div class="tabs" id="tabContainer"></div>
-
-    <div class="active-panel" id="activePanel">
-      <div class="panel-header" id="panelHeader">
-        <div class="panel-title-area">
-          <div class="panel-title-main" id="panelTitleMain">SWEET</div>
-          <div class="panel-title-sub" id="panelTitleSub">スイート</div>
-        </div>
-        <div class="panel-count" id="panelCount">0 selected</div>
-      </div>
-      <div class="panel-body">
-        <div class="grid" id="btnGrid"></div>
-      </div>
+      <button class="chart-dl-btn" onclick="saveImage()" title="Save Image">
+        <span class="material-symbols-rounded">download</span>
+      </button>
     </div>
 
-    <div class="actions">
-      <button class="action-btn btn-undo" onclick="undoData()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.6L3 13"></path></svg>
+    <div class="tabs-wrapper">
+      <button class="tab-nav-btn" onclick="scrollTabs('left')">
+        <span class="material-symbols-rounded">chevron_left</span>
+      </button>
+      <div class="tabs" id="tabContainer"></div>
+      <button class="tab-nav-btn" onclick="scrollTabs('right')">
+        <span class="material-symbols-rounded">chevron_right</span>
+      </button>
+    </div>
+
+    <div class="category-header" id="catHeader">
+      <div class="cat-title">
+        <h2 id="header-main">FRUITY</h2>
+        <span id="header-sub">フルーティー</span>
+      </div>
+      <div class="cat-count" id="header-count">0 selected</div>
+    </div>
+
+    <div class="grid-bg">
+      <div class="grid" id="btnGrid"></div>
+    </div>
+    
+    <div class="action-bar">
+      <button class="action-btn btn-dark" onclick="undo()" id="undoBtn" style="opacity:0.5; pointer-events:none;">
+        <span class="material-symbols-rounded">undo</span>
         <span id="text-undo">Undo</span>
       </button>
-      <button class="action-btn btn-reset" onclick="resetData()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-        <span id="text-reset">Clear</span>
+      <button class="action-btn btn-dark" onclick="resetData()">
+        <span class="material-symbols-rounded">delete</span>
+        <span id="text-clear">Clear</span>
       </button>
-      <button class="action-btn btn-copy" onclick="copyData()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      <button class="action-btn btn-primary" onclick="copyData()" id="copyBtn">
+        <span class="material-symbols-rounded">content_copy</span>
         <span id="text-copy">Copy Data</span>
       </button>
     </div>
@@ -154,10 +216,10 @@
 
     const opacityLevels = [0, 0.3, 0.5, 0.7, 0.85, 1.0];
     let selectedScores = {};
-    let actionHistory = []; // ★新規：操作履歴を保存する配列
     let myChart = null;
     let currentLang = 'en'; 
     let activeCategory = 'fruity';
+    let historyStack = [];
 
     function hexToRgba(hex, alpha) {
       let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
@@ -168,137 +230,176 @@
       currentLang = lang;
       document.getElementById('lang-en').classList.toggle('active', lang === 'en');
       document.getElementById('lang-jp').classList.toggle('active', lang === 'jp');
-      
-      const emptyTextEl = document.getElementById('emptyText');
-      if(emptyTextEl) emptyTextEl.innerText = lang === 'en' ? 'Tap flavors below to build profile' : '下のボタンをタップして香りを記録してください';
-      
-      document.getElementById('text-undo').innerText = lang === 'en' ? 'Undo' : '戻る';
-      document.getElementById('text-reset').innerText = lang === 'en' ? 'Clear' : 'クリア';
-      document.getElementById('text-copy').innerText = lang === 'en' ? 'Copy Data' : 'データをコピー';
-      
-      renderTabs(); renderPanel(activeCategory); updateChart();
+      updateUIText();
+      renderTabs(); 
+      renderCategoryHeader();
+      renderButtons(activeCategory); 
+      updateChart();
+    }
+
+    function updateUIText() {
+      document.getElementById('emptyText').innerText = currentLang === 'en' ? 'Tap flavors below to build profile' : '下のボタンをタップして香りを記録してください';
+      document.getElementById('text-undo').innerText = currentLang === 'en' ? 'Undo' : '戻る';
+      document.getElementById('text-clear').innerText = currentLang === 'en' ? 'Clear' : 'クリア';
+      document.getElementById('text-copy').innerText = currentLang === 'en' ? 'Copy Data' : 'コピー';
     }
 
     function renderTabs() {
       const tabContainer = document.getElementById('tabContainer');
+      if(!tabContainer) return;
       tabContainer.innerHTML = '';
       for (const catKey in catConfig) {
         const tab = document.createElement('div');
         tab.className = `tab ${catKey === activeCategory ? 'active' : ''}`;
         tab.innerText = catConfig[catKey][currentLang];
-        tab.style.borderBottom = `3px solid ${catConfig[catKey].hex}`;
-        tab.onclick = () => { activeCategory = catKey; renderTabs(); renderPanel(catKey); };
+        if (catKey === activeCategory) {
+          tab.style.background = catConfig[catKey].hex;
+          tab.style.color = '#111'; 
+        }
+        tab.onclick = () => { activeCategory = catKey; renderTabs(); renderCategoryHeader(); renderButtons(catKey); };
         tabContainer.appendChild(tab);
       }
     }
 
-    // ★新規：パネル全体を描画する関数
-    function renderPanel(catKey) {
-      const colorHex = catConfig[catKey].hex;
-      
-      // ヘッダーの色と文字を更新
-      document.getElementById('panelHeader').style.backgroundColor = colorHex;
-      document.getElementById('panelTitleMain').innerText = catConfig[catKey][currentLang];
-      document.getElementById('panelTitleSub').innerText = catConfig[catKey][currentLang === 'en' ? 'jp' : 'en'];
-
-      // 選択中の数をカウント
-      let selectedCount = 0;
-      whiskyFlavorData[catKey].forEach(item => {
-        if ((selectedScores[`${catKey}_${item.en}`] || 0) > 0) selectedCount++;
-      });
-      document.getElementById('panelCount').innerText = currentLang === 'en' ? `${selectedCount} selected` : `${selectedCount} 個選択中`;
-
-      // ボタンを描画
-      const btnGrid = document.getElementById('btnGrid');
-      btnGrid.innerHTML = ''; 
-      
-      whiskyFlavorData[catKey].forEach(item => {
-        const dataId = `${catKey}_${item.en}`;
-        const currentScore = selectedScores[dataId] || 0;
-        const btn = document.createElement('button');
-        btn.className = `btn ${currentScore > 0 ? 'selected' : ''}`;
-        
-        const dots = currentScore === 0 ? "〇〇〇〇〇" : "●".repeat(currentScore) + "〇".repeat(5 - currentScore);
-        
-        // 選ばれている時の枠線
-        if (currentScore > 0) {
-          btn.style.borderColor = hexToRgba(colorHex, opacityLevels[currentScore]);
-        }
-
-        const mainText = currentLang === 'en' ? item.en : item.jp;
-        const subText  = currentLang === 'en' ? item.jp : item.en;
-        
-        btn.innerHTML = `
-          <div class="btn-main" style="color:${currentScore > 0 ? colorHex : '#333'}">${mainText}</div>
-          <div class="btn-sub">${subText}</div>
-          <div class="btn-dots" style="color:${currentScore > 0 ? colorHex : '#ccc'}">${dots}</div>
-        `;
-        
-        btn.onclick = () => { 
-          // ★変更：タップする前の状態を履歴に保存（Undo用）
-          actionHistory.push({ cat: catKey, id: dataId, score: currentScore });
-          
-          selectedScores[dataId] = ((selectedScores[dataId] || 0) + 1) % 6; 
-          renderPanel(catKey); 
-          updateChart(); 
-        };
-        btnGrid.appendChild(btn);
-      });
+    function scrollTabs(direction) {
+      const container = document.getElementById('tabContainer');
+      const scrollAmount = 150;
+      if (direction === 'left') {
+        container.scrollLeft -= scrollAmount;
+      } else {
+        container.scrollLeft += scrollAmount;
+      }
     }
 
-    // ★新規：元に戻す関数
-    function undoData() {
-      if (actionHistory.length === 0) return; // 履歴がなければ何もしない
-      
-      // 履歴から直前の操作を取り出す
-      const lastAction = actionHistory.pop();
-      
-      // スコアを直前の状態に戻す
-      selectedScores[lastAction.id] = lastAction.score;
-      
-      // もし別のタブを見ていたら、操作したタブに自動で移動する
-      if (activeCategory !== lastAction.cat) {
-        activeCategory = lastAction.cat;
-        renderTabs();
+    function renderCategoryHeader() {
+      const config = catConfig[activeCategory];
+      const header = document.getElementById('catHeader');
+      document.getElementById('header-main').innerText = config.en;
+      document.getElementById('header-sub').innerText = config.jp;
+      header.style.background = config.hex;
+
+      let count = 0;
+      if(whiskyFlavorData[activeCategory]) {
+        whiskyFlavorData[activeCategory].forEach(item => {
+          if (selectedScores[`${activeCategory}_${item.en}`] > 0) count++;
+        });
       }
+      document.getElementById('header-count').innerText = currentLang === 'en' ? `${count} selected` : `${count} 選択`;
+    }
+
+    function renderButtons(catKey) {
+      const btnGrid = document.getElementById('btnGrid');
+      if(!btnGrid) return;
+      btnGrid.innerHTML = ''; 
+      const colorHex = catConfig[catKey].hex;
       
-      renderPanel(activeCategory);
+      if(whiskyFlavorData[catKey]) {
+        whiskyFlavorData[catKey].forEach(item => {
+          const dataId = `${catKey}_${item.en}`;
+          const currentScore = selectedScores[dataId] || 0;
+          
+          const btn = document.createElement('div');
+          btn.className = `card-btn ${currentScore > 0 ? 'selected' : ''}`;
+          if (currentScore > 0) btn.style.borderColor = colorHex;
+          
+          const dots = currentScore === 0 ? "〇〇〇〇〇" : "●".repeat(currentScore) + "〇".repeat(5 - currentScore);
+          const dotsColor = currentScore > 0 ? colorHex : '#ddd';
+
+          const mainText = currentLang === 'en' ? item.en : item.jp;
+          const subText  = currentLang === 'en' ? item.jp : item.en;
+          
+          btn.innerHTML = `
+            <div class="card-main" style="color:${currentScore > 0 ? colorHex : 'var(--card-text)'}">${mainText}</div>
+            <div class="card-sub">${subText}</div>
+            <div class="card-dots" style="color:${dotsColor}">${dots}</div>
+          `;
+          
+          btn.onclick = () => { 
+            saveHistory();
+            selectedScores[dataId] = ((selectedScores[dataId] || 0) + 1) % 6; 
+            renderCategoryHeader(); 
+            renderButtons(catKey); 
+            updateChart(); 
+          };
+          btnGrid.appendChild(btn);
+        });
+      }
+    }
+
+    function saveHistory() {
+      historyStack.push(JSON.parse(JSON.stringify(selectedScores)));
+      if(historyStack.length > 50) historyStack.shift();
+      updateUndoBtn();
+    }
+
+    function undo() {
+      if(historyStack.length === 0) return;
+      selectedScores = historyStack.pop();
+      updateUndoBtn();
+      renderCategoryHeader();
+      renderButtons(activeCategory);
       updateChart();
+    }
+
+    function updateUndoBtn() {
+      const btn = document.getElementById('undoBtn');
+      if(historyStack.length > 0) {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      } else {
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+      }
+    }
+
+    function saveImage() {
+      if (!myChart) return;
+      const url = myChart.getDataURL({ pixelRatio: 2, backgroundColor: '#000' });
+      const link = document.createElement('a');
+      link.download = 'AromaMosaic.png';
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     function updateChart() {
       const chartDom = document.getElementById('chart-container');
+      const emptyOverlay = document.getElementById('emptyText');
       const chartData = [];
       let totalScore = 0;
+      
       for (const catKey in catConfig) {
         const children = [];
         const baseColor = catConfig[catKey].hex;
-        whiskyFlavorData[catKey].forEach(item => {
-          const score = selectedScores[`${catKey}_${item.en}`] || 0;
-          if (score > 0) {
-            children.push({ name: item[currentLang], value: score, itemStyle: { color: hexToRgba(baseColor, opacityLevels[score]) } });
-            totalScore += score;
-          }
-        });
-        if (children.length > 0) chartData.push({ name: catConfig[catKey][currentLang], itemStyle: { color: baseColor }, children: children });
+        if(whiskyFlavorData[catKey]) {
+          whiskyFlavorData[catKey].forEach(item => {
+            const score = selectedScores[`${catKey}_${item.en}`] || 0;
+            if (score > 0) {
+              children.push({ name: item[currentLang], value: score, itemStyle: { color: hexToRgba(baseColor, opacityLevels[score]) } });
+              totalScore += score;
+            }
+          });
+          if (children.length > 0) chartData.push({ name: catConfig[catKey][currentLang], itemStyle: { color: baseColor }, children: children });
+        }
       }
 
       if (totalScore === 0) {
         if (myChart) { myChart.dispose(); myChart = null; }
-        const msg = currentLang === 'en' ? 'Tap flavors below to build profile' : '下のボタンをタップして香りを記録してください';
-        chartDom.innerHTML = `<div class="empty-msg" id="emptyText">${msg}</div>`;
+        emptyOverlay.style.display = 'flex';
         return;
       }
+      emptyOverlay.style.display = 'none';
 
       if (!myChart) myChart = echarts.init(chartDom);
       const option = {
-        toolbox: { show: true, feature: { saveAsImage: { name: 'AromaMosaic', title: currentLang === 'en' ? 'Save Image' : '画像を保存', pixelRatio: 2, background: '#111' } }, iconStyle: { borderColor: '#fff' }, right: 15, top: 15 },
+        toolbox: { show: false },
         tooltip: { formatter: '{b}: Level {c}' },
         series: [{
           type: 'treemap', data: chartData, roam: false, nodeClick: false, breadcrumb: { show: false },
-          itemStyle: { borderColor: '#111', borderWidth: 1, gapWidth: 0 },
-          label: { show: true, formatter: '{b}', color: '#fff', fontSize: 13, fontWeight: 'bold', textShadowColor: '#000', textShadowBlur: 4 },
-          upperLabel: { show: true, height: 24, color: '#fff', fontWeight: 'bold', fontSize: 11, formatter: '{b}' }
+          itemStyle: { borderColor: '#000', borderWidth: 2, gapWidth: 1 },
+          label: { show: true, formatter: '{b}', color: '#fff', fontSize: 13, fontWeight: 'bold', textShadowColor: '#000', textShadowBlur: 3 },
+          left: 0, top: 0, right: 0, bottom: 0, width: '100%', height: '100%'
         }]
       };
       myChart.setOption(option);
@@ -306,9 +407,10 @@
 
     function resetData() {
       if(confirm(currentLang === 'en' ? 'Clear all data?' : '入力データをすべて消去しますか？')) { 
+        saveHistory();
         selectedScores = {}; 
-        actionHistory = []; // リセット時は履歴も空にする
-        renderPanel(activeCategory); 
+        renderCategoryHeader();
+        renderButtons(activeCategory); 
         updateChart(); 
       }
     }
@@ -319,22 +421,29 @@
       let hasData = false;
       for (const catKey in catConfig) {
         const flavors = [];
-        whiskyFlavorData[catKey].forEach(item => {
-          const score = selectedScores[`${catKey}_${item.en}`] || 0;
-          if (score > 0) { flavors.push(`${item[currentLang]}(${score})`); hasData = true; }
-        });
-        if (flavors.length > 0) outputText += `${catConfig[catKey][currentLang]}: ${flavors.join(', ')}\n`;
+        if(whiskyFlavorData[catKey]) {
+          whiskyFlavorData[catKey].forEach(item => {
+            const score = selectedScores[`${catKey}_${item.en}`] || 0;
+            if (score > 0) { flavors.push(`${item[currentLang]}(${score})`); hasData = true; }
+          });
+          if (flavors.length > 0) outputText += `${catConfig[catKey][currentLang]}: ${flavors.join(', ')}\n`;
+        }
       }
       if(!hasData) return;
       navigator.clipboard.writeText(outputText).then(() => {
         const toast = document.getElementById('toast');
-        toast.innerText = currentLang === 'en' ? 'Copied to clipboard!' : 'クリップボードにコピーしました！';
+        document.getElementById('toast-msg').innerText = currentLang === 'en' ? 'Copied!' : 'コピーしました';
         toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2500);
+        setTimeout(() => toast.classList.remove('show'), 2000);
       });
     }
 
-    renderTabs(); renderPanel(activeCategory);
+    window.addEventListener('DOMContentLoaded', () => {
+      updateUIText();
+      renderTabs();
+      renderCategoryHeader();
+      renderButtons(activeCategory);
+    });
     window.addEventListener('resize', () => { if(myChart) myChart.resize(); });
   </script>
 </body>
