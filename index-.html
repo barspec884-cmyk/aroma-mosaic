@@ -1,0 +1,384 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Aroma Experience UI - Full Version</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <style>
+    :root { --bg: #0b0c10; --panel: #1f2833; --text: #e9ecf1; --accent: #c5a880; }
+    
+    /* ▼ 修正①: overflow-y: auto; にしてスクロールを許可！ ▼ */
+    /* ▼ 琥珀色（Amber）のグラデーション背景 ▼ */
+    body { 
+      margin: 0; 
+      font-family: sans-serif; 
+      /* 左上から右下へ、深い琥珀色から闇へ溶け込むグラデーション */
+      background: linear-gradient(135deg, #3a2208 0%, #170d05 40%, #0b0c10 100%); 
+      background-attachment: fixed; /* スクロールしても背景の光を固定する */
+      color: var(--text); 
+      overflow-y: auto; 
+    }
+    
+    /* ▼ ジンクリア（透明なガラス）のチャート枠 ▼ */
+    .chart-box { 
+      width: 100%; 
+      aspect-ratio: 1 / 1; 
+      max-width: 500px; 
+      margin: 0 auto 20px; 
+      border-radius: 16px; /* 少し丸みを強調 */
+      
+      /* ガラスのような透け感と反射（Glassmorphism） */
+      background: rgba(255, 255, 255, 0.03); 
+      backdrop-filter: blur(12px); 
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08); 
+      border-top: 1px solid rgba(255, 255, 255, 0.15); /* 上からの光の反射 */
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); /* 奥行きを出す影 */
+    }
+    
+    /* ベース画面（グラフ表示エリア） */
+    #base-screen { 
+      min-height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+      padding: 20px 15px 120px; 
+      box-sizing: border-box; 
+    }
+    
+    .chart-box { 
+      width: 100%; 
+      aspect-ratio: 1 / 1; 
+      max-width: 500px; 
+      margin: 0 auto 20px; 
+      border-radius: 12px; 
+      background: rgba(20, 25, 30, 0.5); 
+    }
+    
+    #radar-chart, #tree-chart { width: 100%; height: 100%; }
+    
+    /* フローティング「香りを入力」ボタン */
+    .fab-container { position: fixed; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 10; pointer-events: none; }
+    .fab-btn { background: var(--accent); color: #000; font-weight: bold; font-size: 16px; padding: 16px 40px; border-radius: 30px; border: none; box-shadow: 0 4px 15px rgba(197, 168, 128, 0.4); cursor: pointer; transition: 0.2s; letter-spacing: 1px; pointer-events: auto; }
+    .fab-btn:active { transform: scale(0.95); }
+
+    /* すりガラスモーダル (Glassmorphism) */
+    #aroma-modal { position: fixed; inset: 0; background: rgba(11, 12, 16, 0.65); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+    #aroma-modal.active { opacity: 1; pointer-events: auto; }
+
+    /* モーダルヘッダー＆タブ */
+    .modal-header { padding: 40px 10px 10px; display: flex; flex-direction: column; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .header-top { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+    .close-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.3); padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .close-btn:active { background: rgba(255,255,255,0.3); }
+    
+    .tabs { display: flex; overflow-x: auto; gap: 12px; padding-bottom: 5px; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { padding: 8px 16px; border-radius: 20px; background: rgba(255,255,255,0.05); color: #888; border: 1px solid transparent; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; transition: 0.3s; }
+    .tab.active { background: rgba(255,255,255,0.9); color: #000; box-shadow: 0 0 15px rgba(255,255,255,0.3); }
+
+    /* スワイプエリア ＆ 矢印ナビゲーション */
+    .swipe-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    
+    .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; width: 44px; height: 44px; font-size: 18px; cursor: pointer; z-index: 10; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+    .nav-arrow:hover { background: rgba(255, 255, 255, 0.3); }
+    .nav-arrow:active { transform: translateY(-50%) scale(0.9); }
+    .arrow-left { left: 10px; }
+    .arrow-right { right: 10px; }
+
+    .swipe-container { flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-behavior: smooth; }
+    .swipe-container::-webkit-scrollbar { display: none; }
+    .swipe-page { min-width: 100vw; height: 100%; scroll-snap-align: start; padding: 15px; box-sizing: border-box; overflow-y: auto; }
+    
+    /* グリッドと液体フィルボタン */
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-bottom: 100px; }
+    .btn { position: relative; overflow: hidden; padding: 0; border-radius: 14px; background: rgba(31, 40, 51, 0.6); border: 1px solid rgba(255,255,255,0.08); color: #fff; cursor: pointer; display: flex; flex-direction: column; min-height: 90px; text-align: left; transition: transform 0.1s; }
+    .btn:active { transform: scale(0.96); }
+    
+    .fill-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; opacity: 0.85; }
+    
+    .btn-content { position: relative; z-index: 2; padding: 10px; display: flex; flex-direction: column; gap: 4px; height: 100%; box-sizing: border-box; }
+    .btn-main { font-size: 15px; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+    .btn-sub { font-size: 10px; opacity: 0.7; font-family: monospace; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+    
+    .meta-tags { display: flex; flex-direction: column; gap: 3px; margin-top: auto; }
+    .tag-expert { font-size: 9px; color: #aaa; background: rgba(0,0,0,0.4); padding: 2px 4px; border-radius: 4px; width: fit-content; text-shadow: none; }
+    .tag-sense { font-size: 10px; color: #fff; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 4px; width: fit-content; font-weight: bold; text-shadow: none; border: 1px solid rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+
+  <div id="base-screen">
+    <div class="chart-box"><div id="tree-chart"></div></div>
+    <div class="chart-box"><div id="radar-chart"></div></div>
+  </div>
+
+  <div class="fab-container">
+    <button class="fab-btn" id="open-btn">Add Aromas</button>
+  </div>
+
+  <div id="aroma-modal">
+    <div class="modal-header">
+      <div class="header-top">
+        <h3 style="margin:0; font-size:20px; letter-spacing: 1px;">Aroma Profile</h3>
+        <button class="close-btn" id="close-btn">Done</button>
+      </div>
+      <div class="tabs" id="modal-tabs"></div>
+    </div>
+    
+    <div class="swipe-wrapper">
+      <button class="nav-arrow arrow-left" id="prev-btn" style="display: none;">◀</button>
+      <button class="nav-arrow arrow-right" id="next-btn">▶</button>
+      <div class="swipe-container" id="swipe-container"></div>
+    </div>
+  </div>
+
+  <script>
+    // ▼ カテゴリ設定
+    const catConfig = {
+      fruity: { jp: "フルーティー", hex: "#f4d03f" }, floral: { jp: "フローラル", hex: "#ff99cc" },
+      woody:  { jp: "ウッディ",     hex: "#a67c52" }, smoky:  { jp: "スモーキー",   hex: "#a0a0a0" },
+      sweet:  { jp: "スイート",     hex: "#f2a154" }, winey:  { jp: "ワイニー",     hex: "#e63946" },
+      cereal: { jp: "シリアル",     hex: "#d4a373" }, sulfury:{ jp: "サルファリー", hex: "#ccff00" }
+    };
+
+    // ▼ 香りデータ（完全版）
+    const flavorData = {
+      fruity: [
+        { en: "Lemon", jp: "レモン", key: "クエン酸｜鋭い酸" }, { en: "Orange", jp: "オレンジ", key: "柑橘油｜甘酸" }, { en: "Green apple", jp: "青リンゴ", key: "リンゴ酸｜切り口" },
+        { en: "Red apple", jp: "赤リンゴ", key: "果糖｜完熟果実" }, { en: "Pear", jp: "洋梨", key: "エステル｜柔甘" }, { en: "Peach", jp: "桃", key: "ラクトン｜熟肉" },
+        { en: "Apricot", jp: "アプリコット", key: "核果エステル｜甘酸" }, { en: "Cherry", jp: "チェリー", key: "ベンズアルデヒド｜赤果" }, { en: "Banana", jp: "バナナ", key: "酢酸イソアミル｜熟甘" },
+        { en: "Pineapple", jp: "パイナップル", key: "エチルブチレート｜明酸" }, { en: "Mango", jp: "マンゴー", key: "ラクトン｜濃甘" }, { en: "Citrus peel", jp: "柑橘ピール", key: "柑橘皮油｜苦柑" }
+      ],
+      floral: [
+        { en: "Lavender", jp: "ラベンダー", key: "リナロール｜涼花" }, { en: "Rose", jp: "ローズ", key: "ゲラニオール｜甘花" }, { en: "Violet", jp: "スミレ", key: "イオノン｜粉花" },
+        { en: "Orange blossom", jp: "オレンジブロッサム", key: "ネロリ｜柑花" }, { en: "Jasmine", jp: "ジャスミン", key: "インドール｜濃花" }, { en: "Chamomile", jp: "カモミール", key: "テルペン｜花茶" },
+        { en: "Honeysuckle", jp: "ハニーサックル", key: "蜜様成分｜蜜花" }, { en: "Lilac", jp: "ライラック", key: "芳香アルコール｜軽花" }, { en: "Geranium", jp: "ゼラニウム", key: "ゲラニオール｜葉花" },
+        { en: "Peony", jp: "ピオニー", key: "芳香エステル｜厚花" }, { en: "Osmanthus", jp: "金木犀", key: "ラクトン｜秋花" }, { en: "Lily", jp: "ユリ", key: "フローラルアルデヒド｜清花" }
+      ],
+      woody: [
+        { en: "Oak", jp: "オーク", key: "リグニン分解物｜樽香" }, { en: "Cedar", jp: "シダー", key: "セドロール｜乾木" }, { en: "Sandalwood", jp: "白檀", key: "サンタロール｜白檀" },
+        { en: "Cinnamon", jp: "シナモン", key: "シンナムアルデヒド｜温皮" }, { en: "Nutmeg", jp: "ナツメグ", key: "ミリスチシン｜甘辛" }, { en: "Clove", jp: "クローブ", key: "オイゲノール｜樹辛" },
+        { en: "Tobacco", jp: "タバコ", key: "乾燥葉成分｜葉香" }, { en: "Leather", jp: "レザー", key: "タンニン｜渋革" }, { en: "Toasted oak", jp: "トーストオーク", key: "メイラード反応物｜焼樽" },
+        { en: "Charred wood", jp: "チャーウッド", key: "炭化物｜炭木" }, { en: "Dry timber", jp: "乾燥材", key: "乾燥木材｜古材" }, { en: "Resin", jp: "樹脂", key: "テルペン樹脂｜樹液" }
+      ],
+      smoky: [
+        { en: "Smoke", jp: "スモーク", key: "燃焼揮発物｜軽煙" }, { en: "Bonfire", jp: "焚き火", key: "木質燃焼物｜薪煙" }, { en: "Ash", jp: "灰", key: "灰分｜乾灰" },
+        { en: "Seaweed", jp: "海藻", key: "海塩ミネラル｜潮香" }, { en: "Rocky shore", jp: "岩場", key: "塩気揮発物｜潮風" }, { en: "Damp earth", jp: "湿った土", key: "ジオスミン｜土臭" },
+        { en: "Char", jp: "炭", key: "炭化物｜黒焦" }, { en: "Tar", jp: "タール", key: "高温炭化物｜油煙" }, { en: "Medicinal", jp: "メディシナル", key: "フェノール類｜薬品" },
+        { en: "Disinfectant", jp: "消毒液", key: "ヨード系揮発物｜消毒" }, { en: "Iodine", jp: "ヨード", key: "ヨード｜海薬" }, { en: "Peat smoke", jp: "ピートスモーク", key: "フェノール類｜泥炭" }
+      ],
+      sweet: [
+        { en: "Cream", jp: "クリーム", key: "乳脂肪｜丸甘" }, { en: "Honey", jp: "ハチミツ", key: "花蜜成分｜蜜甘" }, { en: "Custard", jp: "カスタード", key: "卵脂乳成分｜乳甘" },
+        { en: "Vanilla", jp: "バニラ", key: "バニリン｜滑甘" }, { en: "Caramel", jp: "キャラメル", key: "糖分解物｜甘苦" }, { en: "Butterscotch", jp: "バタースコッチ", key: "乳脂糖反応物｜濃甘" },
+        { en: "Toffee", jp: "トフィー", key: "濃縮糖｜糖厚" }, { en: "Maple syrup", jp: "メープルシロップ", key: "メープルラクトン｜樹甘" }, { en: "Brown sugar", jp: "三温糖", key: "未精製糖｜粗糖" },
+        { en: "Chocolate", jp: "チョコレート", key: "カカオポリフェノール｜焙甘" }, { en: "Marzipan", jp: "マジパン", key: "アーモンド油｜核甘" }, { en: "Molasses", jp: "モラセス", key: "廃糖蜜｜重甘" }
+      ],
+      winey: [
+        { en: "Plum", jp: "プラム", key: "有機酸｜赤果" }, { en: "Red wine", jp: "赤ワイン", key: "タンニン｜酒果" }, { en: "Berry jam", jp: "ベリージャム", key: "煮詰果糖｜煮果" },
+        { en: "Fig", jp: "イチジク", key: "果糖酸化物｜厚果" }, { en: "Raisin", jp: "レーズン", key: "乾燥果糖｜乾甘" }, { en: "Prune", jp: "プルーン", key: "濃縮有機酸｜乾酸" },
+        { en: "Sherry", jp: "シェリー", key: "酸化熟成物｜熟酒" }, { en: "Port", jp: "ポート", key: "酒精強化物｜酒精" }, { en: "Oloroso", jp: "オロロソ", key: "酸化ナッツ成分｜ナ渋" },
+        { en: "Walnut", jp: "くるみ", key: "脂質酸化物｜殻香" }, { en: "Rancio", jp: "ランシオ", key: "酸化脂質｜熟香" }, { en: "PX", jp: "PX", key: "高糖度成分｜蜜酒" }
+      ],
+      cereal: [
+        { en: "Wheat", jp: "小麦", key: "穀粉成分｜粉香" }, { en: "Green grain", jp: "未熟穀物", key: "未熟穀物｜若麦" }, { en: "Corn", jp: "トウモロコシ", key: "デンプン｜粒香" },
+        { en: "Malt", jp: "モルト", key: "麦芽糖｜麦香" }, { en: "Sweet malt", jp: "甘い麦汁", key: "糖化麦汁｜濃麦" }, { en: "Oatmeal", jp: "オートミール", key: "穀脂質｜粥香" },
+        { en: "Bread", jp: "パン", key: "発酵糖｜焼香" }, { en: "Biscuit", jp: "ビスケット", key: "メイラード反応物｜甘粉" }, { en: "Yeast", jp: "酵母", key: "酵母代謝物｜生地" },
+        { en: "Toast", jp: "トースト", key: "メイラード生成物｜焼目" }, { en: "Grain porridge", jp: "麦粥", key: "煮穀糖｜粥甘" }, { en: "Rye", jp: "ライ麦", key: "穀油成分｜辛穀" }
+      ],
+      sulfury: [
+        { en: "Metallic", jp: "メタリック", key: "金属イオン｜冷臭" }, { en: "Onion", jp: "玉ねぎ", key: "含硫アリル化合物｜青辛" }, { en: "Garlic", jp: "ニンニク", key: "アリシン｜辛臭" },
+        { en: "Boiled cabbage", jp: "茹でたキャベツ", key: "硫化野菜成分｜青硫" }, { en: "Boiled egg", jp: "茹で卵", key: "硫化水素｜硫臭" }, { en: "Rubber", jp: "ゴム", key: "硫化ゴム｜弾臭" },
+        { en: "Struck match", jp: "擦ったマッチ", key: "二酸化硫黄｜瞬硫" }, { en: "Gunpowder", jp: "火薬", key: "硝酸塩燃焼物｜粉煙" }, { en: "Sulfur", jp: "硫黄", key: "硫黄化合物｜黄臭" },
+        { en: "Smoke taint", jp: "スモークテイント", key: "硫黄煙成分｜硫黄煙" }, { en: "Tanned leather", jp: "鞣し革", key: "硫処理革成分｜硫革" }, { en: "Burnt rubber", jp: "焦げたゴム", key: "硫化燃焼物｜重硫" }
+      ]
+    };
+
+    let selectedScores = {};
+    let radarChart, treeChart;
+    let currentPageIndex = 0;
+    const totalPages = Object.keys(catConfig).length;
+
+    // ▼ 透明度のロジック復活
+    const opacityLevels = [0, 0.3, 0.5, 0.7, 0.85, 1.0];
+    function hexToRgba(hex, alpha) {
+      let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // ▼ UI初期化
+    function initUI() {
+      const tabsDiv = document.getElementById('modal-tabs');
+      const swipeDiv = document.getElementById('swipe-container');
+      const categories = Object.keys(catConfig);
+
+      categories.forEach((catKey, index) => {
+        // タブ生成
+        const tab = document.createElement('div');
+        tab.className = `tab ${index === 0 ? 'active' : ''}`;
+        tab.innerText = catConfig[catKey].jp;
+        tab.onclick = () => scrollToPage(index);
+        tabsDiv.appendChild(tab);
+
+        // スワイプページ生成
+        const page = document.createElement('div');
+        page.className = 'swipe-page';
+        
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+
+        // 液体フィルボタン生成
+        flavorData[catKey].forEach(item => {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          const [expert, sense] = item.key.split('｜');
+
+          btn.innerHTML = `
+            <div class="fill-bg" style="background-color: ${catConfig[catKey].hex}"></div>
+            <div class="btn-content">
+              <div class="btn-main">${item.jp}</div>
+              <div class="btn-sub">${item.en}</div>
+              <div class="meta-tags">
+                <span class="tag-expert">${expert}</span>
+                <span class="tag-sense">${sense}</span>
+              </div>
+            </div>
+          `;
+          
+          btn.onclick = () => {
+            const id = `${catKey}_${item.en}`;
+            selectedScores[id] = ((selectedScores[id] || 0) + 1) % 6;
+            // 液体フィルの高さ更新
+            btn.querySelector('.fill-bg').style.height = `${selectedScores[id] * 20}%`;
+            updateCharts();
+          };
+          grid.appendChild(btn);
+        });
+        page.appendChild(grid);
+        swipeDiv.appendChild(page);
+      });
+
+      // スクロール連動処理（矢印とタブの更新）
+      swipeDiv.addEventListener('scroll', () => {
+        currentPageIndex = Math.round(swipeDiv.scrollLeft / window.innerWidth);
+        document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === currentPageIndex));
+        document.getElementById('prev-btn').style.display = currentPageIndex === 0 ? 'none' : 'flex';
+        document.getElementById('next-btn').style.display = currentPageIndex === totalPages - 1 ? 'none' : 'flex';
+      });
+    }
+
+    function scrollToPage(index) {
+      document.getElementById('swipe-container').scrollTo({ left: index * window.innerWidth, behavior: 'smooth' });
+    }
+
+    // 矢印ボタンのクリックイベント
+    document.getElementById('prev-btn').onclick = () => {
+      if (currentPageIndex > 0) scrollToPage(currentPageIndex - 1);
+    };
+    document.getElementById('next-btn').onclick = () => {
+      if (currentPageIndex < totalPages - 1) scrollToPage(currentPageIndex + 1);
+    };
+
+    // ▼ チャート更新処理
+    function updateCharts() {
+      let radarValues = [];
+      let treeData = [];
+      const indicator = [];
+
+      Object.keys(catConfig).forEach(catKey => {
+        const baseColor = catConfig[catKey].hex;
+        let catTotal = 0;
+        let children = [];
+
+        flavorData[catKey].forEach(item => {
+          const score = selectedScores[`${catKey}_${item.en}`] || 0;
+          if (score > 0) {
+            catTotal += score;
+            const [expert, sense] = item.key.split('｜');
+            children.push({ 
+              name: item.jp, 
+              value: score,  // 素直なスコア（面積）
+              expert: expert,
+              sense: sense,   
+              itemStyle: { color: hexToRgba(baseColor, opacityLevels[score]) } // 美しい透明度
+            });
+          }
+        });
+
+        indicator.push({ name: catConfig[catKey].jp, max: 15 });
+        radarValues.push(catTotal);
+
+        if (children.length > 0) {
+          treeData.push({ name: catConfig[catKey].jp, children: children, itemStyle: { color: baseColor } });
+        }
+      });
+
+      radarChart.setOption({
+        radar: { indicator: indicator, shape: 'polygon', splitNumber: 3, radius: '60%', axisName: { color: '#aaa', fontSize: 10 } },
+        series: [{ type: 'radar', data: [{ value: radarValues, name: 'Aroma', itemStyle: { color: '#c5a880' }, areaStyle: { color: 'rgba(197, 168, 128, 0.4)' } }] }]
+      });
+
+      treeChart.setOption({
+        series: [{ 
+          type: 'treemap', 
+          data: treeData, 
+          roam: false, 
+          nodeClick: false,
+          breadcrumb: { show: false }, 
+          itemStyle: { borderColor: '#000', borderWidth: 2, gapWidth: 1 }, 
+          
+          upperLabel: {
+            show: true,
+            height: 20,
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: 11,
+            textShadowColor: '#000',
+            textShadowBlur: 2
+          },
+
+          label: { 
+            show: true, 
+            // ▼ 修正③: undefinedエラーを出さないための厳密なフォーマット設定 ▼
+            formatter: function(info) {
+              const d = info.data;
+              // 親カテゴリの枠（FRUITYなど）の場合は、普通に名前だけ返す
+              if (!d || !d.expert) {
+                return info.name;
+              }
+              // 選んだタグで、強度が3以上の場合はバッジ付きにする
+              if (d.value >= 3) {
+                return `{name|${info.name}}\n{expert|${d.expert}}\n{sense|${d.sense}}`;
+              }
+              // それ以外は名前だけにする
+              return `{name|${info.name}}`;
+            },
+            rich: {
+              name: { fontSize: 13, fontWeight: 'bold', color: '#fff', textShadowColor: '#000', textShadowBlur: 3, padding: [0,0,4,0] },
+              expert: { fontSize: 10, color: '#ccc', padding: [0,0,2,0] },
+              sense: { fontSize: 11, color: '#fff', backgroundColor: 'rgba(0,0,0,0.3)', padding: [2,4], borderRadius: 3 }
+            }
+          } 
+        }]
+      });
+    }
+
+    // モーダルの開閉
+    document.getElementById('open-btn').onclick = () => document.getElementById('aroma-modal').classList.add('active');
+    document.getElementById('close-btn').onclick = () => document.getElementById('aroma-modal').classList.remove('active');
+
+    window.onload = () => {
+      initUI();
+      radarChart = echarts.init(document.getElementById('radar-chart'));
+      treeChart = echarts.init(document.getElementById('tree-chart'));
+      updateCharts();
+    };
+    
+    // ウィンドウのリサイズ対応
+    window.addEventListener('resize', () => {
+      if (radarChart) radarChart.resize();
+      if (treeChart) treeChart.resize();
+    });
+  </script>
+</body>
+</html>
