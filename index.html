@@ -35,17 +35,113 @@
     .tab.active { background: #fff; color: #000; }
 
     .swipe-wrapper { position: relative; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .nav-arrow { position: absolute; top: 15px; background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; width: 44px; height: 44px; font-size: 18px; cursor: pointer; z-index: 60; display: flex; justify-content: center; align-items: center; }
+.nav-arrow { 
+  position: absolute; 
+  top: 10px; /* 15pxから10pxに微調整してタイトルと中心を合わせる */
+  background: rgba(255, 255, 255, 0.05); /* 少し透けさせて洗練された印象に */
+  color: white; 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-radius: 50%; 
+  width: 44px; 
+  height: 44px; 
+  font-size: 18px; 
+  cursor: pointer; 
+  z-index: 60; 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+}
     .arrow-left { left: 15px; }
     .arrow-right { right: 15px; }
 
     .swipe-container { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-behavior: smooth; }
     .swipe-page { min-width: 100vw; box-sizing: border-box; padding: 0 15px 100px; overflow-y: auto; position: relative;}
 
-    .category-title { position: sticky; top: 0; z-index: 50; background: rgba(11, 12, 16, 0.95); backdrop-filter: blur(10px); border-left: 4px solid var(--accent); padding: 15px 0 10px 12px; margin: 0 0 15px 0; font-size: 1.4rem; font-weight: bold; text-transform: uppercase; }
+/* カテゴリタイトル：幅に合わせて余白と文字サイズを調整 */
+/* カテゴリタイトル：中央配置かつ矢印と被らない設定 */
+/* --- カテゴリタイトル：中央に固定し、矢印を避ける --- */
+.category-title { 
+  position: sticky; 
+  top: 0; 
+  z-index: 50; 
+  background: rgba(11, 12, 16, 0.95); 
+  backdrop-filter: blur(10px); 
+  text-align: center;
+  /* 左右に50pxの余白を空けて矢印との衝突を防ぐ */
+  padding: 12px 50px; 
+  margin: 0 0 15px 0; 
+  /* 画面幅に応じて文字サイズを調整 */
+  font-size: clamp(1.1rem, 4vw, 1.3rem); 
+  font-weight: bold; 
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- 矢印ボタン：タイトルの高さに合わせて左右に固定 --- */
+.nav-arrow { 
+  position: absolute; 
+  top: 6px; 
+  width: 40px; 
+  height: 40px; 
+  background: rgba(255, 255, 255, 0.1); 
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: white;
+  z-index: 60; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+.arrow-left { left: 10px; }
+.arrow-right { right: 10px; }
+
+/* --- 香りボタンのグリッド：3列を維持し、幅が狭くても崩さない --- */
+.grid { 
+  display: grid; 
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 8px; 
+  padding-bottom: 20px;
+}
+
+.btn { 
+  position: relative; 
+  overflow: hidden; 
+  border-radius: 12px; 
+  background: rgba(45, 55, 70, 0.9); 
+  border: 1px solid rgba(255, 255, 255, 0.15); 
+  color: #fff; 
+  min-height: 85px; /* ここが重要！高さを揃える */
+  cursor: pointer; 
+}
+.btn-main { 
+  font-size: 15px; 
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.btn-sub { 
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+  
+  /* 中央揃えの設定 */
+  text-align: center;
+  padding: 15px 60px 10px 60px; /* 左右に60px空けることで矢印と絶対被りません */
+  border-bottom: 2px solid var(--accent); /* 下線にすることで中央配置が引き締まります */
+  
+  margin: 0 0 15px 0; 
+  font-size: 1.4rem; 
+  font-weight: bold; 
+  text-transform: uppercase; 
+}
 
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .btn { position: relative; overflow: hidden; border-radius: 12px; background: rgba(45, 55, 70, 0.9); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; min-height: 110px; cursor: pointer; text-align: left; }
+    .btn { position: relative; overflow: hidden; border-radius: 12px; background: rgba(45, 55, 70, 0.9); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; min-height: 50px; cursor: pointer; text-align: left; }
     
     /* 色が満たされるための背景レイヤー */
     .fill-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; opacity: 0.8; transition: height 0.3s ease; z-index: 1;}
@@ -307,12 +403,14 @@ categories.forEach((catKey, index) => {
         const page = document.createElement('div');
         page.className = 'swipe-page';
         
-        const title = document.createElement('div');
-        title.className = 'category-title';
-        title.style.borderColor = catConfig[catKey].hex;
-        title.style.color = catConfig[catKey].hex;
-        title.innerText = (currentLang === 'ja') ? catConfig[catKey].jp : catConfig[catKey].en;
-        page.appendChild(title);
+// initUI関数内のタイトル生成部分を微調整
+const title = document.createElement('div');
+title.className = 'category-title';
+title.style.color = catConfig[catKey].hex;
+// ボーダーの色をカテゴリーに合わせる
+title.style.borderBottomColor = catConfig[catKey].hex; 
+title.innerText = (currentLang === 'ja') ? catConfig[catKey].jp : catConfig[catKey].en;
+page.appendChild(title);
 
         const grid = document.createElement('div');
         grid.className = 'grid';
@@ -457,6 +555,21 @@ flavorData[cat].forEach(item => {
       initUI(); 
       updateCharts();
     };
+// --- 矢印ボタンのクリックイベントを追加 ---
+document.getElementById('prev-btn').onclick = () => {
+  const container = document.getElementById('swipe-container');
+  container.scrollBy({ left: -window.innerWidth, behavior: 'smooth' });
+};
+
+document.getElementById('next-btn').onclick = () => {
+  const container = document.getElementById('swipe-container');
+  container.scrollBy({ left: window.innerWidth, behavior: 'smooth' });
+};
+// ---------------------------------------
+
+// 既存のコード（参考：ここより下に書くか、これらと一緒に並べてください）
+document.getElementById('open-btn').onclick = () => document.getElementById('aroma-modal').classList.add('active');
+document.getElementById('close-modal').onclick = () => document.getElementById('aroma-modal').classList.remove('active');
   </script>
 </body>
 </html>
